@@ -362,14 +362,6 @@
       font-weight: 900;
     }
 
-    .practice-streak {
-      min-width: 56px;
-      color: #6e4c16;
-      font-size: 14px;
-      font-weight: 900;
-      white-space: nowrap;
-    }
-
     .input-error {
       flex-basis: 100%;
       min-height: 18px;
@@ -885,11 +877,12 @@
           <option value="2">2 digits</option>
           <option value="3">3 digits</option>
           <option value="4">4 digits</option>
+          <option value="custom">Custom question</option>
         </select>
+        <input class="number-input hidden" id="customQuestionInput" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0–9999" aria-label="Custom question" />
         <button class="practice-btn" id="newQuestionBtn" type="button">New</button>
         <button class="practice-btn" id="checkAnswerBtn" type="button">Check</button>
         <button class="practice-btn" id="hintBtn" type="button">Hint</button>
-        <span class="practice-streak" id="practiceStreak" aria-label="Streak">⭐ 0</span>
       </div>
 
       <div class="input-error hidden" id="inputError" role="alert"></div>
@@ -934,10 +927,10 @@
     const practiceControls = document.getElementById("practiceControls");
     const difficultyLabel = document.getElementById("difficultyLabel");
     const difficultySelect = document.getElementById("difficultySelect");
+    const customQuestionInput = document.getElementById("customQuestionInput");
     const newQuestionBtn = document.getElementById("newQuestionBtn");
     const checkAnswerBtn = document.getElementById("checkAnswerBtn");
     const hintBtn = document.getElementById("hintBtn");
-    const practiceStreak = document.getElementById("practiceStreak");
     const inputError = document.getElementById("inputError");
     const rodLabels = document.querySelectorAll(".rod-label");
     const rodFocuses = document.querySelectorAll(".rod-focus");
@@ -983,14 +976,16 @@
         practiceMode: "Practice",
         instructionFree: "Move the beads to explore numbers.",
         instructionPractice: "Build this number on the abacus.",
+        instructionCustom: "Enter a number to create your own question.",
         difficulty: "Level",
-        digits: ["1 digit", "2 digits", "3 digits", "4 digits"],
+        digits: ["1 digit", "2 digits", "3 digits", "4 digits", "Custom question"],
         newQuestion: "New",
+        setQuestion: "Set question",
+        customQuestion: "Custom question",
         check: "Check",
         hint: "Hint",
         correct: "Correct! Great work!",
         wrong: "Not yet — check the highlighted place values.",
-        streak: "Streak",
         hintText: (label, digit) => `Hint: set the ${label} rod to ${digit}.`,
         error: "Please enter a number from 0 to 9999."
       },
@@ -1005,14 +1000,16 @@
         practiceMode: "练习",
         instructionFree: "拨动算盘珠，自由探索数字。",
         instructionPractice: "请在算盘上表示这个数字。",
+        instructionCustom: "输入数字，自由设置练习题。",
         difficulty: "难度",
-        digits: ["1 位数", "2 位数", "3 位数", "4 位数"],
+        digits: ["1 位数", "2 位数", "3 位数", "4 位数", "自由出题"],
         newQuestion: "新题",
+        setQuestion: "设为题目",
+        customQuestion: "自由出题",
         check: "检查",
         hint: "提示",
         correct: "答对了！做得很好！",
         wrong: "还没正确，请检查高亮的位值。",
-        streak: "连续答对",
         hintText: (label, digit) => `提示：${label}位应该是 ${digit}。`,
         error: "请输入 0 到 9999 的数字。"
       },
@@ -1027,14 +1024,16 @@
         practiceMode: "Latihan",
         instructionFree: "Gerakkan manik untuk meneroka nombor.",
         instructionPractice: "Bina nombor ini pada abakus.",
+        instructionCustom: "Masukkan nombor untuk mencipta soalan sendiri.",
         difficulty: "Tahap",
-        digits: ["1 digit", "2 digit", "3 digit", "4 digit"],
+        digits: ["1 digit", "2 digit", "3 digit", "4 digit", "Soalan sendiri"],
         newQuestion: "Baharu",
+        setQuestion: "Tetapkan",
+        customQuestion: "Soalan sendiri",
         check: "Semak",
         hint: "Petunjuk",
         correct: "Betul! Syabas!",
         wrong: "Belum tepat — semak nilai tempat yang diserlahkan.",
-        streak: "Berturut-turut",
         hintText: (label, digit) => `Petunjuk: lajur ${label} perlu menunjukkan ${digit}.`,
         error: "Sila masukkan nombor dari 0 hingga 9999."
       }
@@ -1043,9 +1042,8 @@
     let currentLang = "en";
     let currentMode = "free";
     let answerVisible = false;
-    let practiceDifficulty = 1;
+    let practiceDifficulty = "1";
     let practiceTarget = null;
-    let practiceStreakCount = 0;
     let practiceQuestionSolved = false;
     let beadSequenceToken = 0;
     let controlsLocked = false;
@@ -1123,12 +1121,14 @@
       const text = buttonTextData[currentLang];
       freeModeBtn.textContent = text.freeMode;
       practiceModeBtn.textContent = text.practiceMode;
-      instructionLine.textContent = currentMode === "practice" ? text.instructionPractice : text.instructionFree;
+      instructionLine.textContent = currentMode === "practice"
+        ? (practiceDifficulty === "custom" && practiceTarget === null ? text.instructionCustom : text.instructionPractice)
+        : text.instructionFree;
       difficultyLabel.textContent = text.difficulty;
-      newQuestionBtn.textContent = text.newQuestion;
+      newQuestionBtn.textContent = practiceDifficulty === "custom" ? text.setQuestion : text.newQuestion;
       checkAnswerBtn.textContent = text.check;
       hintBtn.textContent = text.hint;
-      practiceStreak.setAttribute("aria-label", `${text.streak}: ${practiceStreakCount}`);
+      customQuestionInput.setAttribute("aria-label", text.customQuestion);
       [...difficultySelect.options].forEach((option, index) => {
         option.textContent = text.digits[index];
       });
@@ -1137,12 +1137,34 @@
     freeModeBtn.addEventListener("click", () => setMode("free"));
     practiceModeBtn.addEventListener("click", () => setMode("practice"));
     difficultySelect.addEventListener("change", () => {
-      practiceDifficulty = Number(difficultySelect.value);
-      startNewPracticeProblem();
+      practiceDifficulty = difficultySelect.value;
+      updateCustomQuestionControls();
+      updateLearningInterfaceText();
+      clearInputError();
+
+      if (practiceDifficulty === "custom") {
+        practiceTarget = null;
+        practiceQuestionSolved = false;
+        clearPracticeFeedback();
+        clearPracticeVisuals();
+        updateLearningInterfaceText();
+        updateNumber();
+        customQuestionInput.focus();
+      } else {
+        startNewPracticeProblem();
+      }
+    });
+    customQuestionInput.addEventListener("input", clearInputError);
+    customQuestionInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") startNewPracticeProblem();
     });
     newQuestionBtn.addEventListener("click", startNewPracticeProblem);
     checkAnswerBtn.addEventListener("click", checkPracticeAnswer);
     hintBtn.addEventListener("click", showPracticeHint);
+
+    function updateCustomQuestionControls() {
+      customQuestionInput.classList.toggle("hidden", practiceDifficulty !== "custom");
+    }
 
     function setMode(mode) {
       if (controlsLocked || (mode !== "free" && mode !== "practice")) return;
@@ -1158,6 +1180,7 @@
       freeControls.classList.toggle("hidden", isPractice);
       practiceControls.classList.toggle("hidden", !isPractice);
       answerBtn.parentElement.classList.toggle("hidden", isPractice);
+      updateCustomQuestionControls();
       updateLearningInterfaceText();
 
       if (isPractice) startNewPracticeProblem();
@@ -1268,6 +1291,7 @@
       freeModeBtn.disabled = locked;
       practiceModeBtn.disabled = locked;
       difficultySelect.disabled = locked;
+      customQuestionInput.disabled = locked;
       newQuestionBtn.disabled = locked;
       checkAnswerBtn.disabled = locked;
       hintBtn.disabled = locked;
@@ -1276,17 +1300,30 @@
 
     async function startNewPracticeProblem() {
       if (currentMode !== "practice" || controlsLocked) return;
-      const previousTarget = practiceTarget;
-      const min = practiceDifficulty === 1 ? 0 : 10 ** (practiceDifficulty - 1);
-      const max = (10 ** practiceDifficulty) - 1;
+      if (practiceDifficulty === "custom") {
+        const rawValue = customQuestionInput.value.trim();
+        if (!/^\d{1,4}$/.test(rawValue)) {
+          showInputError();
+          customQuestionInput.focus();
+          return;
+        }
+        practiceTarget = Number(rawValue);
+        clearInputError();
+      } else {
+        const difficulty = Number(practiceDifficulty);
+        const previousTarget = practiceTarget;
+        const min = difficulty === 1 ? 0 : 10 ** (difficulty - 1);
+        const max = (10 ** difficulty) - 1;
 
-      do {
-        practiceTarget = Math.floor(Math.random() * (max - min + 1)) + min;
-      } while (practiceTarget === previousTarget && max > min);
+        do {
+          practiceTarget = Math.floor(Math.random() * (max - min + 1)) + min;
+        } while (practiceTarget === previousTarget && max > min);
+      }
 
       practiceQuestionSolved = false;
       clearPracticeFeedback();
       clearPracticeVisuals();
+      updateLearningInterfaceText();
       updateNumber();
       await resetAbacus();
       updateNumber();
@@ -1304,18 +1341,12 @@
 
       if (wrongColumns.length === 0) {
         const newlySolved = !practiceQuestionSolved;
-        if (newlySolved) practiceStreakCount += 1;
         practiceQuestionSolved = true;
-        practiceStreak.textContent = `⭐ ${practiceStreakCount}`;
-        practiceStreak.setAttribute("aria-label", `${buttonTextData[currentLang].streak}: ${practiceStreakCount}`);
         showPracticeFeedback(buttonTextData[currentLang].correct, "correct");
         if (newlySolved) celebratePracticeSuccess();
         return;
       }
 
-      practiceStreakCount = 0;
-      practiceStreak.textContent = "⭐ 0";
-      practiceStreak.setAttribute("aria-label", `${buttonTextData[currentLang].streak}: 0`);
       showPracticeFeedback(buttonTextData[currentLang].wrong, "wrong");
       markPracticeColumns(wrongColumns, "error");
     }
@@ -1724,13 +1755,19 @@
     }
 
     function updateNumber() {
-      if (currentMode === "practice" && practiceTarget !== null) {
-        numberDisplay.textContent = practiceTarget.toString();
-        wordDisplay.textContent = languageData[currentLang].words(practiceTarget);
-        numberDisplay.classList.remove("hidden");
-        wordDisplay.classList.remove("hidden");
+      if (currentMode === "practice") {
         answerBtn.parentElement.classList.add("hidden");
         speakBtn.disabled = true;
+
+        if (practiceTarget === null) {
+          numberDisplay.classList.add("hidden");
+          wordDisplay.classList.add("hidden");
+        } else {
+          numberDisplay.textContent = practiceTarget.toString();
+          wordDisplay.textContent = languageData[currentLang].words(practiceTarget);
+          numberDisplay.classList.remove("hidden");
+          wordDisplay.classList.remove("hidden");
+        }
         return;
       }
 
