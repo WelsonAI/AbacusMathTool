@@ -126,7 +126,7 @@
     .lang-select {
       appearance: none;
       -webkit-appearance: none;
-      min-width: 112px;
+      min-width: 145px;
       height: 34px;
       border-radius: 10px;
       border: 2px solid #222;
@@ -149,6 +149,25 @@
     .lang-select:focus {
       outline: 3px solid rgba(0,0,0,.14);
       outline-offset: 2px;
+    }
+
+    .bead-sound-toggle {
+      min-width: 108px;
+      height: 34px;
+      padding: 4px 9px;
+      border: 2px solid #222;
+      border-radius: 10px;
+      background: #fff;
+      color: #111;
+      box-shadow: none;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .bead-sound-toggle[aria-pressed="false"] {
+      color: #695b48;
+      background: #eee9df;
     }
 
     .answer-btn {
@@ -308,6 +327,13 @@
       line-height: 1;
       pointer-events: none;
       white-space: nowrap;
+      transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+
+    .rod-label.is-active {
+      transform: translateX(-50%) scale(1.1);
+      background: #ffca4f;
+      box-shadow: 0 0 0 4px rgba(255, 202, 79, .25);
     }
 
     .rod-label.hidden {
@@ -340,6 +366,40 @@
       transform: translate(-50%, -50%) scale(1.07);
       filter: drop-shadow(0 7px 5px rgba(73, 37, 6, .3));
       transition-duration: 85ms, 100ms, 100ms;
+    }
+
+    .bead.is-settling {
+      animation: bead-settle 190ms cubic-bezier(.2, .9, .35, 1.25);
+    }
+
+    .abacus-wrap.is-animating .bead {
+      pointer-events: none;
+    }
+
+    .rod-focus {
+      position: absolute;
+      z-index: 2;
+      top: 7.5%;
+      bottom: 8%;
+      width: 12%;
+      transform: translateX(-50%) scaleX(.65);
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255, 202, 79, 0), rgba(255, 202, 79, .34), rgba(255, 202, 79, 0));
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 140ms ease, transform 170ms ease;
+    }
+
+    .rod-focus.is-active {
+      opacity: 1;
+      transform: translateX(-50%) scaleX(1);
+    }
+
+    @keyframes bead-settle {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      48% { transform: translate(-50%, -50%) scale(1.09, .94); }
+      76% { transform: translate(-50%, -50%) scale(.98, 1.03); }
+      100% { transform: translate(-50%, -50%) scale(1); }
     }
 
     .forest-footer {
@@ -392,6 +452,13 @@
     input:focus-visible {
       outline: 4px solid rgba(255, 151, 54, .42);
       outline-offset: 3px;
+    }
+
+    button:disabled,
+    select:disabled,
+    input:disabled {
+      opacity: .5;
+      cursor: not-allowed;
     }
 
     /* Keep the complete tool inside common laptop-height viewports. */
@@ -459,7 +526,7 @@
       }
 
       .lang-select {
-        min-width: 112px;
+        min-width: 140px;
         height: 31px;
         font-size: 13px;
         padding-top: 5px;
@@ -467,6 +534,13 @@
         background-position:
           calc(100% - 16px) 13px,
           calc(100% - 10px) 13px;
+      }
+
+      .bead-sound-toggle {
+        min-width: 96px;
+        height: 31px;
+        padding: 4px 7px;
+        font-size: 12px;
       }
 
       .answer-btn {
@@ -551,6 +625,10 @@
       button {
         transition: none;
       }
+
+      .bead.is-settling {
+        animation: none;
+      }
     }
   </style>
 </head>
@@ -560,9 +638,12 @@
       <div class="lang-switch" aria-label="Language switch">
         <select class="lang-select" id="languageSelect" aria-label="Language">
           <option value="en">English</option>
-          <option value="zh">Chinese</option>
-          <option value="bm">Malay</option>
+          <option value="zh">中文</option>
+          <option value="bm">Bahasa Melayu</option>
         </select>
+        <button class="bead-sound-toggle" id="beadSoundToggle" type="button" aria-pressed="true">
+          🔊 Beads: On
+        </button>
       </div>
 
       <div class="display">
@@ -585,6 +666,11 @@
     </section>
 
     <div class="abacus-wrap" id="abacus">
+      <div class="rod-focus" data-focus-col="0"></div>
+      <div class="rod-focus" data-focus-col="1"></div>
+      <div class="rod-focus" data-focus-col="2"></div>
+      <div class="rod-focus" data-focus-col="3"></div>
+
       <img class="frame" src="assets/frame.png" alt="Soroban frame" />
 
       <div class="rod-label hidden" data-label-col="0"></div>
@@ -606,11 +692,13 @@
     const speakBtn = document.getElementById("speakBtn");
     const answerBtn = document.getElementById("answerBtn");
     const languageSelect = document.getElementById("languageSelect");
+    const beadSoundToggle = document.getElementById("beadSoundToggle");
     const keyNumberLabel = document.getElementById("keyNumberLabel");
     const keyNumberInput = document.getElementById("keyNumberInput");
     const showNumberBtn = document.getElementById("showNumberBtn");
     const inputError = document.getElementById("inputError");
     const rodLabels = document.querySelectorAll(".rod-label");
+    const rodFocuses = document.querySelectorAll(".rod-focus");
 
     // Rod centers tuned to the current 2D frame
     const columns = [
@@ -647,6 +735,8 @@
         reset: "Reset",
         number: "Number",
         show: "Show",
+        soundOn: "Beads: On",
+        soundOff: "Beads: Off",
         error: "Please enter a number from 0 to 9999."
       },
       zh: {
@@ -654,6 +744,8 @@
         reset: "重置",
         number: "数字",
         show: "显示",
+        soundOn: "珠声：开",
+        soundOff: "珠声：关",
         error: "请输入 0 到 9999 的数字。"
       },
       bm: {
@@ -661,12 +753,17 @@
         reset: "Mula Semula",
         number: "Nombor",
         show: "Papar",
+        soundOn: "Bunyi: Hidup",
+        soundOff: "Bunyi: Mati",
         error: "Sila masukkan nombor dari 0 hingga 9999."
       }
     };
 
     let currentLang = "en";
     let answerVisible = false;
+    let beadSequenceToken = 0;
+    let controlsLocked = false;
+    let activeColumnToken = 0;
 
     /*
       Label position fine tuning only.
@@ -692,6 +789,11 @@
         const offset = isMobile ? labelOffsetMobile[colIndex] : labelOffsetPc[colIndex];
         label.style.left = (columns[colIndex].x + offset) + "%";
       });
+
+      rodFocuses.forEach(focus => {
+        const colIndex = Number(focus.dataset.focusCol);
+        focus.style.left = columns[colIndex].x + "%";
+      });
     }
 
     updateLabelPositions();
@@ -715,6 +817,7 @@
       resetBtn.textContent = buttonText.reset;
       keyNumberLabel.textContent = buttonText.number;
       showNumberBtn.textContent = buttonText.show;
+      updateBeadSoundToggle();
       updateInputErrorMessage();
 
       rodLabels.forEach((label, index) => {
@@ -752,7 +855,7 @@
       return number;
     }
 
-    function showNumberOnAbacus() {
+    async function showNumberOnAbacus() {
       const number = getKeyInputNumber();
       if (number === null) {
         showInputError();
@@ -761,30 +864,70 @@
 
       clearInputError();
       stopMalayAudio();
-      setAbacusNumber(number);
       hideAnswer();
-      updateNumber();
+      await animateAbacusNumber(number, [0, 1, 2, 3]);
     }
 
-    function setAbacusNumber(number) {
-      const digits = [
+    function getDigits(number) {
+      return [
         Math.floor(number / 1000) % 10,
         Math.floor(number / 100) % 10,
         Math.floor(number / 10) % 10,
         number % 10
       ];
+    }
 
-      const hadMovement = digits.some((digit, index) => (
-        columns[index].upper !== (digit >= 5) || columns[index].lower !== (digit % 5)
-      ));
+    function getColumnDigit(colIndex) {
+      const col = columns[colIndex];
+      return (col.upper ? 5 : 0) + col.lower;
+    }
 
-      digits.forEach((digit, index) => {
-        columns[index].upper = digit >= 5;
-        columns[index].lower = digit % 5;
-      });
+    function setColumnDigit(colIndex, digit) {
+      columns[colIndex].upper = digit >= 5;
+      columns[colIndex].lower = digit % 5;
+    }
 
+    function setAbacusNumberInstant(number) {
+      getDigits(number).forEach((digit, index) => setColumnDigit(index, digit));
       syncBeadPositions();
-      if (hadMovement) playBeadClick(.85);
+      updateNumber();
+    }
+
+    async function animateAbacusNumber(number, order) {
+      const digits = getDigits(number);
+      const token = ++beadSequenceToken;
+      setControlsLocked(true);
+
+      try {
+        for (const colIndex of order) {
+          if (token !== beadSequenceToken) return;
+          if (getColumnDigit(colIndex) === digits[colIndex]) continue;
+
+          setColumnDigit(colIndex, digits[colIndex]);
+          syncBeadPositions();
+          settleColumn(colIndex);
+          highlightColumn(colIndex, 230);
+          playBeadClick(.92, true);
+          updateNumber();
+          await wait(135);
+        }
+      } finally {
+        if (token === beadSequenceToken) {
+          setControlsLocked(false);
+          clearActiveColumn(180);
+          updateNumber();
+        }
+      }
+    }
+
+    function setControlsLocked(locked) {
+      controlsLocked = locked;
+      showNumberBtn.disabled = locked;
+      resetBtn.disabled = locked;
+      answerBtn.disabled = locked;
+      languageSelect.disabled = locked;
+      keyNumberInput.disabled = locked;
+      abacus.classList.toggle("is-animating", locked);
     }
 
     showNumberBtn.addEventListener("click", showNumberOnAbacus);
@@ -810,7 +953,51 @@
     const beads = [];
     let dragging = null;
     let beadAudioContext = null;
+    let beadSoundBuffer = null;
+    let beadSoundDecodePromise = null;
     let lastBeadSoundAt = 0;
+    let beadSoundEnabled = readBeadSoundPreference();
+
+    const beadSoundDataPromise = fetch("assets/audio/bead/abacus-cc-by.mp3")
+      .then(response => {
+        if (!response.ok) throw new Error(`Bead sound HTTP ${response.status}`);
+        return response.arrayBuffer();
+      })
+      .catch(error => {
+        console.warn("Real bead sound could not be loaded; using synthesized fallback.", error);
+        return null;
+      });
+
+    function readBeadSoundPreference() {
+      try {
+        return localStorage.getItem("abacus-bead-sound") !== "off";
+      } catch {
+        return true;
+      }
+    }
+
+    function saveBeadSoundPreference() {
+      try {
+        localStorage.setItem("abacus-bead-sound", beadSoundEnabled ? "on" : "off");
+      } catch {
+        // The sound still works when storage is unavailable.
+      }
+    }
+
+    function updateBeadSoundToggle() {
+      if (!beadSoundToggle) return;
+      const text = buttonTextData[currentLang];
+      beadSoundToggle.setAttribute("aria-pressed", String(beadSoundEnabled));
+      beadSoundToggle.textContent = `${beadSoundEnabled ? "🔊" : "🔇"} ${beadSoundEnabled ? text.soundOn : text.soundOff}`;
+      beadSoundToggle.setAttribute("aria-label", beadSoundEnabled ? text.soundOn : text.soundOff);
+    }
+
+    beadSoundToggle.addEventListener("click", () => {
+      beadSoundEnabled = !beadSoundEnabled;
+      saveBeadSoundPreference();
+      updateBeadSoundToggle();
+      if (beadSoundEnabled) playBeadClick(.85, true);
+    });
 
     function unlockBeadSound() {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -826,66 +1013,73 @@
       return Promise.resolve(beadAudioContext);
     }
 
-    // A clear two-part wooden clack. It is generated locally, so it works
-    // offline and does not need a separate sound download.
+    async function loadBeadSoundBuffer(context) {
+      if (beadSoundBuffer) return beadSoundBuffer;
+      if (!beadSoundDecodePromise) {
+        beadSoundDecodePromise = beadSoundDataPromise.then(data => {
+          if (!data) return null;
+          return context.decodeAudioData(data.slice(0));
+        }).then(buffer => {
+          beadSoundBuffer = buffer;
+          return buffer;
+        }).catch(error => {
+          console.warn("Real bead sound could not be decoded; using synthesized fallback.", error);
+          return null;
+        });
+      }
+      return beadSoundDecodePromise;
+    }
+
+    // Play a short excerpt from a real abacus recording. A small pitch change
+    // prevents repeated movements from sounding mechanically identical.
     function playBeadClick(strength = 1, force = false) {
+      if (!beadSoundEnabled) return;
       const nowMs = performance.now();
       if (!force && nowMs - lastBeadSoundAt < 38) return;
       lastBeadSoundAt = nowMs;
 
-      unlockBeadSound().then(context => {
+      unlockBeadSound().then(async context => {
         if (!context || context.state !== "running") return;
 
-        const now = context.currentTime;
-        const duration = 0.075;
-        const master = context.createGain();
-        master.gain.setValueAtTime(0.3 * strength, now);
-        master.gain.exponentialRampToValueAtTime(0.001, now + duration);
-        master.connect(context.destination);
-
-        const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
-        const samples = buffer.getChannelData(0);
-        for (let i = 0; i < samples.length; i++) {
-          const fade = 1 - (i / samples.length);
-          samples[i] = (Math.random() * 2 - 1) * fade * fade * fade;
+        const recordedSound = await loadBeadSoundBuffer(context);
+        if (recordedSound) {
+          const source = context.createBufferSource();
+          const gain = context.createGain();
+          source.buffer = recordedSound;
+          source.playbackRate.value = 0.96 + Math.random() * 0.08;
+          gain.gain.value = 1.8 * strength;
+          source.connect(gain).connect(context.destination);
+          source.start(context.currentTime, 2.73, .27);
+          return;
         }
 
-        const noise = context.createBufferSource();
-        const filter = context.createBiquadFilter();
-        const noiseGain = context.createGain();
-        noise.buffer = buffer;
-        filter.type = "bandpass";
-        filter.frequency.setValueAtTime(1050 + Math.random() * 350, now);
-        filter.Q.setValueAtTime(0.9, now);
-        noiseGain.gain.setValueAtTime(0.9, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-        noise.connect(filter).connect(noiseGain).connect(master);
-
-        const lowTone = context.createOscillator();
-        const lowGain = context.createGain();
-        lowTone.type = "triangle";
-        lowTone.frequency.setValueAtTime(240 + Math.random() * 35, now);
-        lowTone.frequency.exponentialRampToValueAtTime(125, now + duration);
-        lowGain.gain.setValueAtTime(0.3, now);
-        lowGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-        lowTone.connect(lowGain).connect(master);
-
-        const highTone = context.createOscillator();
-        const highGain = context.createGain();
-        highTone.type = "sine";
-        highTone.frequency.setValueAtTime(560 + Math.random() * 50, now);
-        highTone.frequency.exponentialRampToValueAtTime(310, now + duration * .7);
-        highGain.gain.setValueAtTime(0.12, now);
-        highGain.gain.exponentialRampToValueAtTime(0.001, now + duration * .7);
-        highTone.connect(highGain).connect(master);
-
-        noise.start(now);
-        noise.stop(now + duration);
-        lowTone.start(now);
-        lowTone.stop(now + duration);
-        highTone.start(now);
-        highTone.stop(now + duration);
+        playSynthesizedBeadClick(context, strength);
       });
+    }
+
+    function playSynthesizedBeadClick(context, strength) {
+      const now = context.currentTime;
+      const duration = 0.075;
+      const master = context.createGain();
+      master.gain.setValueAtTime(0.3 * strength, now);
+      master.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      master.connect(context.destination);
+
+      const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
+      const samples = buffer.getChannelData(0);
+      for (let i = 0; i < samples.length; i++) {
+        const fade = 1 - (i / samples.length);
+        samples[i] = (Math.random() * 2 - 1) * fade * fade * fade;
+      }
+
+      const noise = context.createBufferSource();
+      const filter = context.createBiquadFilter();
+      noise.buffer = buffer;
+      filter.type = "bandpass";
+      filter.frequency.value = 1150;
+      noise.connect(filter).connect(master);
+      noise.start(now);
+      noise.stop(now + duration);
     }
 
     function createBeads() {
@@ -935,11 +1129,47 @@
       });
     }
 
+    function settleColumn(colIndex) {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      beads.filter(bead => Number(bead.dataset.col) === colIndex).forEach(bead => {
+        bead.classList.remove("is-settling");
+        void bead.offsetWidth;
+        bead.classList.add("is-settling");
+        bead.addEventListener("animationend", () => bead.classList.remove("is-settling"), { once: true });
+      });
+    }
+
+    function setColumnHighlight(colIndex) {
+      rodLabels.forEach((label, index) => label.classList.toggle("is-active", index === colIndex));
+      rodFocuses.forEach((focus, index) => focus.classList.toggle("is-active", index === colIndex));
+    }
+
+    function highlightColumn(colIndex, duration = 0) {
+      const token = ++activeColumnToken;
+      setColumnHighlight(colIndex);
+      if (duration > 0) {
+        setTimeout(() => {
+          if (token === activeColumnToken) setColumnHighlight(null);
+        }, duration);
+      }
+    }
+
+    function clearActiveColumn(delay = 0) {
+      const token = ++activeColumnToken;
+      const clear = () => {
+        if (token === activeColumnToken) setColumnHighlight(null);
+      };
+      if (delay > 0) setTimeout(clear, delay);
+      else clear();
+    }
+
     function onPointerDown(e) {
+      if (controlsLocked) return;
       const bead = e.currentTarget;
       playBeadClick(.8, true);
       bead.setPointerCapture(e.pointerId);
       bead.classList.add("is-dragging");
+      highlightColumn(Number(bead.dataset.col));
 
       dragging = {
         bead,
@@ -978,7 +1208,11 @@
       }
 
       const afterDigit = (col.upper ? 5 : 0) + col.lower;
-      if (afterDigit !== beforeDigit) playBeadClick();
+      if (afterDigit !== beforeDigit) {
+        playBeadClick();
+        settleColumn(colIndex);
+        highlightColumn(colIndex);
+      }
 
       syncBeadPositions();
       clearInputError();
@@ -990,6 +1224,7 @@
       if (!dragging) return;
 
       const bead = dragging.bead;
+      const colIndex = Number(bead.dataset.col);
       bead.removeEventListener("pointermove", onPointerMove);
       bead.removeEventListener("pointerup", onPointerUp);
       bead.removeEventListener("pointercancel", onPointerUp);
@@ -997,6 +1232,8 @@
       dragging = null;
 
       syncBeadPositions();
+      settleColumn(colIndex);
+      highlightColumn(colIndex, 230);
       updateNumber();
     }
 
@@ -1033,20 +1270,34 @@
       speakBtn.disabled = true;
     }
 
-    function resetAbacus() {
+    async function resetAbacus() {
+      const token = ++beadSequenceToken;
       stopMalayAudio();
       hideAnswer();
       clearInputError();
       keyNumberInput.value = "";
-      const hadMovement = columns.some(col => col.upper || col.lower > 0);
-      columns.forEach(col => {
-        col.upper = false;
-        col.lower = 0;
-      });
+      setControlsLocked(true);
 
-      syncBeadPositions();
-      if (hadMovement) playBeadClick(.85);
-      updateNumber();
+      try {
+        for (const colIndex of [3, 2, 1, 0]) {
+          if (token !== beadSequenceToken) return;
+          if (getColumnDigit(colIndex) === 0) continue;
+
+          setColumnDigit(colIndex, 0);
+          syncBeadPositions();
+          settleColumn(colIndex);
+          highlightColumn(colIndex, 220);
+          playBeadClick(.9, true);
+          updateNumber();
+          await wait(125);
+        }
+      } finally {
+        if (token === beadSequenceToken) {
+          setControlsLocked(false);
+          clearActiveColumn(180);
+          updateNumber();
+        }
+      }
     }
 
     function numberToEnglish(n) {
@@ -1176,32 +1427,22 @@
     // Preload common BM audio files so phone playback feels faster after the page opens.
     const bmCommonAudioWords = [
       "sifar", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "lapan", "sembilan",
-      "sepuluh", "sebelas", "belas", "puluh", "ratus", "ribu", "juta"
+      "sepuluh", "sebelas", "belas", "puluh", "ratus", "ribu"
     ];
     const bmAudioUrlCache = new Map();
-
-    function getBmAudioCandidatePaths(name) {
-      const forms = makeMalayFileNameVariants(name, true);
-      const extensions = [".MP3", ".mp3", ".Mp3"];
-      const paths = [];
-
-      for (const form of forms) {
-        for (const ext of extensions) {
-          paths.push(`assets/audio/bm/${form}${ext}`);
-        }
-      }
-
-      return paths;
-    }
+    let bmPreloadStarted = false;
 
     function preloadMalayAudio() {
+      if (bmPreloadStarted) return;
+      bmPreloadStarted = true;
+
       bmCommonAudioWords.forEach(word => {
-        getBmAudioCandidatePaths(word).forEach(src => {
-          const audio = new Audio();
-          audio.preload = "auto";
-          audio.src = src;
-          audio.load();
-        });
+        const src = `assets/audio/bm/${word}.MP3`;
+        const audio = new Audio();
+        audio.preload = "auto";
+        audio.src = src;
+        audio.load();
+        bmAudioUrlCache.set(word, src);
       });
     }
 
