@@ -837,7 +837,7 @@
             <option value="bm">Bahasa Melayu</option>
           </select>
           <button class="bead-sound-toggle" id="beadSoundToggle" type="button" aria-pressed="true">
-            🔊 Beads: On
+            🔊 Sound: On
           </button>
         </div>
 
@@ -970,8 +970,8 @@
         reset: "Reset",
         number: "Number",
         show: "Show",
-        soundOn: "Beads: On",
-        soundOff: "Beads: Off",
+        soundOn: "Sound: On",
+        soundOff: "Sound: Off",
         freeMode: "Free",
         practiceMode: "Practice",
         instructionFree: "Move the beads to explore numbers.",
@@ -994,8 +994,8 @@
         reset: "重置",
         number: "数字",
         show: "显示",
-        soundOn: "珠声：开",
-        soundOff: "珠声：关",
+        soundOn: "音效：开",
+        soundOff: "音效：关",
         freeMode: "自由",
         practiceMode: "练习",
         instructionFree: "拨动算盘珠，自由探索数字。",
@@ -1343,10 +1343,14 @@
         const newlySolved = !practiceQuestionSolved;
         practiceQuestionSolved = true;
         showPracticeFeedback(buttonTextData[currentLang].correct, "correct");
-        if (newlySolved) celebratePracticeSuccess();
+        if (newlySolved) {
+          playPracticeFeedbackSound("correct");
+          celebratePracticeSuccess();
+        }
         return;
       }
 
+      playPracticeFeedbackSound("wrong");
       showPracticeFeedback(buttonTextData[currentLang].wrong, "wrong");
       markPracticeColumns(wrongColumns, "error");
     }
@@ -1582,6 +1586,41 @@
       noise.connect(filter).connect(master);
       noise.start(now);
       noise.stop(now + duration);
+    }
+
+    function playPracticeFeedbackSound(result) {
+      if (!beadSoundEnabled) return;
+
+      unlockBeadSound().then(context => {
+        if (!context || context.state !== "running") return;
+
+        const isCorrect = result === "correct";
+        const notes = isCorrect
+          ? [
+              { frequency: 523.25, offset: 0, duration: .16 },
+              { frequency: 659.25, offset: .09, duration: .18 },
+              { frequency: 783.99, offset: .18, duration: .24 }
+            ]
+          : [
+              { frequency: 293.66, offset: 0, duration: .18 },
+              { frequency: 246.94, offset: .13, duration: .24 }
+            ];
+
+        notes.forEach(note => {
+          const start = context.currentTime + note.offset;
+          const oscillator = context.createOscillator();
+          const gain = context.createGain();
+
+          oscillator.type = isCorrect ? "sine" : "triangle";
+          oscillator.frequency.setValueAtTime(note.frequency, start);
+          gain.gain.setValueAtTime(.001, start);
+          gain.gain.exponentialRampToValueAtTime(isCorrect ? .12 : .075, start + .015);
+          gain.gain.exponentialRampToValueAtTime(.001, start + note.duration);
+          oscillator.connect(gain).connect(context.destination);
+          oscillator.start(start);
+          oscillator.stop(start + note.duration + .02);
+        });
+      });
     }
 
     function createBeads() {
