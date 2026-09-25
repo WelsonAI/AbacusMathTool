@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Soroban Tool EN ZH BM</title>
   <style>
+    :root {
+      /* #FFCA4F mixed with white for a softer, child-friendly background. */
+      --page-yellow: #ffe7b0;
+      --sunny-yellow: #ffca4f;
+      --ink: #3f321e;
+      --card: rgba(255, 255, 255, .72);
+      --card-border: rgba(128, 83, 16, .14);
+    }
+
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
@@ -13,16 +22,24 @@
     body {
       margin: 0;
       min-height: 100dvh;
-      background: #f2f2f2;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(255, 255, 255, .72) 0 5px, transparent 6px),
+        radial-gradient(circle at 86% 18%, rgba(255, 255, 255, .5) 0 4px, transparent 5px),
+        linear-gradient(180deg, #fff3d4 0%, var(--page-yellow) 62%, #ffdda0 100%);
+      background-size: 160px 160px, 210px 210px, auto;
       font-family: Arial, Helvetica, sans-serif;
       overflow: auto;
+      color: var(--ink);
+      isolation: isolate;
     }
 
     .tool {
+      position: relative;
+      z-index: 2;
       width: min(96vw, 760px);
       min-height: 100dvh;
       margin: 0 auto;
-      padding: 12px 8px 90px;
+      padding: 18px 10px clamp(145px, 21vw, 250px);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -40,6 +57,13 @@
       justify-content: center;
       gap: 8px;
       margin: 0 0 10px;
+      padding: 14px 12px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      box-shadow: 0 12px 30px rgba(119, 76, 13, .12);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
 
     .display {
@@ -54,6 +78,7 @@
       font-weight: 800;
       line-height: 1;
       letter-spacing: 3px;
+      color: #5a3d16;
     }
 
     .number-line.hidden {
@@ -236,6 +261,15 @@
       touch-action: none;
     }
 
+    .abacus-wrap::before {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      inset: 8% 15.2% 8.5%;
+      border-radius: 5px;
+      background: rgba(255, 249, 230, .78);
+    }
+
     .frame {
       position: absolute;
       inset: 0;
@@ -257,6 +291,7 @@
       font-weight: 900;
       color: #222;
       background: rgba(255, 255, 255, .78);
+      border: 1px solid rgba(77, 49, 8, .12);
       border-radius: 8px;
       padding: 2px 4px;
       line-height: 1;
@@ -277,11 +312,46 @@
       touch-action: none;
       user-select: none;
       z-index: 4;
+      filter: drop-shadow(0 4px 3px rgba(73, 37, 6, .24));
+      transition:
+        top 155ms cubic-bezier(.22, 1, .36, 1),
+        transform 100ms ease,
+        filter 100ms ease;
+      will-change: top, transform;
     }
 
     .bead:active {
       cursor: grabbing;
       z-index: 20;
+    }
+
+    .bead.is-dragging {
+      transform: translate(-50%, -50%) scale(1.07);
+      filter: drop-shadow(0 7px 5px rgba(73, 37, 6, .3));
+      transition-duration: 85ms, 100ms, 100ms;
+    }
+
+    .forest-footer {
+      position: fixed;
+      z-index: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: clamp(130px, 22vw, 270px);
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .forest-footer img {
+      position: absolute;
+      left: 50%;
+      bottom: -1px;
+      width: max(100%, 900px);
+      height: 100%;
+      object-fit: fill;
+      transform: translateX(-50%);
+      filter: saturate(1.25) brightness(1.28);
+      opacity: .98;
     }
 
     .controls {
@@ -296,21 +366,41 @@
       font-weight: 700;
       padding: 9px 18px;
       border-radius: 12px;
-      border: 2px solid #333;
-      background: #ffffff;
+      border: 2px solid #5f431c;
+      background: #fffdf7;
+      color: #3f321e;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      box-shadow: 0 3px 0 rgba(95, 67, 28, .22), 0 7px 18px rgba(95, 67, 28, .11);
+      transition: transform 100ms ease, box-shadow 100ms ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: #fff8e7;
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 rgba(95, 67, 28, .22), 0 3px 9px rgba(95, 67, 28, .12);
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible {
+      outline: 4px solid rgba(255, 151, 54, .42);
+      outline-offset: 3px;
     }
 
     @media (max-width: 640px) {
       .tool {
         width: 100%;
-        padding: 10px 8px 90px;
+        padding: 10px 8px 145px;
       }
 
       .top-panel {
         min-height: 138px;
         margin-bottom: 4px;
+        padding: 10px 8px;
+        border-radius: 20px;
         flex-direction: column;
         justify-content: center;
         gap: 6px;
@@ -390,6 +480,14 @@
         width: min(92vw, 520px);
       }
 
+      .forest-footer {
+        height: 135px;
+      }
+
+      .forest-footer img {
+        width: 900px;
+      }
+
       .rod-label {
         bottom: 4.4%;
 
@@ -397,6 +495,13 @@
         font-size: clamp(9px, 2.6vw, 12px);
         padding: 1px 3px;
         line-height: 1;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .bead,
+      button {
+        transition: none;
       }
     }
   </style>
@@ -442,6 +547,10 @@
 
   <div class="controls">
     <button id="resetBtn">Reset</button>
+  </div>
+
+  <div class="forest-footer" aria-hidden="true">
+    <img src="assets/forest-footer.png" alt="" />
   </div>
 
   <script>
@@ -620,12 +729,17 @@
         number % 10
       ];
 
+      const hadMovement = digits.some((digit, index) => (
+        columns[index].upper !== (digit >= 5) || columns[index].lower !== (digit % 5)
+      ));
+
       digits.forEach((digit, index) => {
         columns[index].upper = digit >= 5;
         columns[index].lower = digit % 5;
       });
 
       syncBeadPositions();
+      if (hadMovement) playBeadClick(.85);
     }
 
     showNumberBtn.addEventListener("click", showNumberOnAbacus);
@@ -650,6 +764,64 @@
 
     const beads = [];
     let dragging = null;
+    let beadAudioContext = null;
+    let lastBeadSoundAt = 0;
+
+    function unlockBeadSound() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+
+      if (!beadAudioContext) beadAudioContext = new AudioContextClass();
+      if (beadAudioContext.state === "suspended") beadAudioContext.resume();
+      return beadAudioContext;
+    }
+
+    // A tiny synthesized wooden click keeps the tool self-contained: no extra
+    // audio download is needed, and it responds immediately on phones/tablets.
+    function playBeadClick(strength = 1) {
+      const context = unlockBeadSound();
+      const nowMs = performance.now();
+      if (!context || nowMs - lastBeadSoundAt < 32) return;
+      lastBeadSoundAt = nowMs;
+
+      const now = context.currentTime;
+      const duration = 0.045;
+      const master = context.createGain();
+      master.gain.setValueAtTime(0.1 * strength, now);
+      master.connect(context.destination);
+
+      const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
+      const samples = buffer.getChannelData(0);
+      for (let i = 0; i < samples.length; i++) {
+        const fade = 1 - (i / samples.length);
+        samples[i] = (Math.random() * 2 - 1) * fade * fade;
+      }
+
+      const noise = context.createBufferSource();
+      const filter = context.createBiquadFilter();
+      const noiseGain = context.createGain();
+      noise.buffer = buffer;
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(820 + Math.random() * 260, now);
+      filter.Q.setValueAtTime(1.2, now);
+      noiseGain.gain.setValueAtTime(0.72, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      noise.connect(filter).connect(noiseGain).connect(master);
+
+      const tone = context.createOscillator();
+      const toneGain = context.createGain();
+      tone.type = "triangle";
+      tone.frequency.setValueAtTime(170 + Math.random() * 25, now);
+      tone.frequency.exponentialRampToValueAtTime(105, now + duration);
+      toneGain.gain.setValueAtTime(0.22, now);
+      toneGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      tone.connect(toneGain).connect(master);
+
+      noise.start(now);
+      noise.stop(now + duration);
+      tone.start(now);
+      tone.stop(now + duration);
+    }
 
     function createBeads() {
       abacus.querySelectorAll(".bead").forEach(b => b.remove());
@@ -669,6 +841,7 @@
     function createBead(data) {
       const img = document.createElement("img");
       img.src = "assets/bead.png";
+      img.alt = "";
       img.className = "bead";
       img.draggable = false;
       img.dataset.col = data.colIndex;
@@ -699,7 +872,9 @@
 
     function onPointerDown(e) {
       const bead = e.currentTarget;
+      unlockBeadSound();
       bead.setPointerCapture(e.pointerId);
+      bead.classList.add("is-dragging");
 
       dragging = {
         bead,
@@ -719,6 +894,7 @@
       const colIndex = Number(bead.dataset.col);
       const type = bead.dataset.type;
       const col = columns[colIndex];
+      const beforeDigit = (col.upper ? 5 : 0) + col.lower;
       const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
 
       if (type === "upper") {
@@ -736,6 +912,9 @@
         }
       }
 
+      const afterDigit = (col.upper ? 5 : 0) + col.lower;
+      if (afterDigit !== beforeDigit) playBeadClick();
+
       syncBeadPositions();
       clearInputError();
       hideAnswer();
@@ -749,6 +928,7 @@
       bead.removeEventListener("pointermove", onPointerMove);
       bead.removeEventListener("pointerup", onPointerUp);
       bead.removeEventListener("pointercancel", onPointerUp);
+      bead.classList.remove("is-dragging");
       dragging = null;
 
       syncBeadPositions();
@@ -793,12 +973,14 @@
       hideAnswer();
       clearInputError();
       keyNumberInput.value = "";
+      const hadMovement = columns.some(col => col.upper || col.lower > 0);
       columns.forEach(col => {
         col.upper = false;
         col.lower = 0;
       });
 
       syncBeadPositions();
+      if (hadMovement) playBeadClick(.85);
       updateNumber();
     }
 
