@@ -223,7 +223,8 @@
       background: #fff;
     }
 
-    .show-number-btn {
+    .show-number-btn,
+    .reset-btn {
       min-width: 70px;
       height: 36px;
       border-radius: 10px;
@@ -354,13 +355,6 @@
       opacity: .98;
     }
 
-    .controls {
-      position: fixed;
-      right: 14px;
-      bottom: 14px;
-      z-index: 100;
-    }
-
     button {
       font-size: 18px;
       font-weight: 700;
@@ -471,7 +465,8 @@
         font-size: 15px;
       }
 
-      .show-number-btn {
+      .show-number-btn,
+      .reset-btn {
         height: 34px;
         font-size: 13px;
       }
@@ -532,6 +527,7 @@
       <span class="input-label" id="keyNumberLabel">Number</span>
       <input class="number-input" id="keyNumberInput" type="number" inputmode="numeric" min="0" max="9999" placeholder="0" />
       <button class="show-number-btn" id="showNumberBtn" type="button">Show</button>
+      <button class="reset-btn" id="resetBtn" type="button">Reset</button>
       <div class="input-error hidden" id="inputError" role="alert"></div>
     </section>
 
@@ -544,10 +540,6 @@
       <div class="rod-label hidden" data-label-col="3"></div>
     </div>
   </main>
-
-  <div class="controls">
-    <button id="resetBtn">Reset</button>
-  </div>
 
   <div class="forest-footer" aria-hidden="true">
     <img src="assets/forest-footer.png" alt="" />
@@ -769,58 +761,78 @@
 
     function unlockBeadSound() {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return null;
+      if (!AudioContextClass) return Promise.resolve(null);
 
       if (!beadAudioContext) beadAudioContext = new AudioContextClass();
-      if (beadAudioContext.state === "suspended") beadAudioContext.resume();
-      return beadAudioContext;
-    }
-
-    // A tiny synthesized wooden click keeps the tool self-contained: no extra
-    // audio download is needed, and it responds immediately on phones/tablets.
-    function playBeadClick(strength = 1) {
-      const context = unlockBeadSound();
-      const nowMs = performance.now();
-      if (!context || nowMs - lastBeadSoundAt < 32) return;
-      lastBeadSoundAt = nowMs;
-
-      const now = context.currentTime;
-      const duration = 0.045;
-      const master = context.createGain();
-      master.gain.setValueAtTime(0.1 * strength, now);
-      master.connect(context.destination);
-
-      const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
-      const samples = buffer.getChannelData(0);
-      for (let i = 0; i < samples.length; i++) {
-        const fade = 1 - (i / samples.length);
-        samples[i] = (Math.random() * 2 - 1) * fade * fade;
+      if (beadAudioContext.state === "suspended") {
+        return beadAudioContext.resume()
+          .then(() => beadAudioContext)
+          .catch(() => null);
       }
 
-      const noise = context.createBufferSource();
-      const filter = context.createBiquadFilter();
-      const noiseGain = context.createGain();
-      noise.buffer = buffer;
-      filter.type = "bandpass";
-      filter.frequency.setValueAtTime(820 + Math.random() * 260, now);
-      filter.Q.setValueAtTime(1.2, now);
-      noiseGain.gain.setValueAtTime(0.72, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-      noise.connect(filter).connect(noiseGain).connect(master);
+      return Promise.resolve(beadAudioContext);
+    }
 
-      const tone = context.createOscillator();
-      const toneGain = context.createGain();
-      tone.type = "triangle";
-      tone.frequency.setValueAtTime(170 + Math.random() * 25, now);
-      tone.frequency.exponentialRampToValueAtTime(105, now + duration);
-      toneGain.gain.setValueAtTime(0.22, now);
-      toneGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-      tone.connect(toneGain).connect(master);
+    // A clear two-part wooden clack. It is generated locally, so it works
+    // offline and does not need a separate sound download.
+    function playBeadClick(strength = 1, force = false) {
+      const nowMs = performance.now();
+      if (!force && nowMs - lastBeadSoundAt < 38) return;
+      lastBeadSoundAt = nowMs;
 
-      noise.start(now);
-      noise.stop(now + duration);
-      tone.start(now);
-      tone.stop(now + duration);
+      unlockBeadSound().then(context => {
+        if (!context || context.state !== "running") return;
+
+        const now = context.currentTime;
+        const duration = 0.075;
+        const master = context.createGain();
+        master.gain.setValueAtTime(0.3 * strength, now);
+        master.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        master.connect(context.destination);
+
+        const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
+        const samples = buffer.getChannelData(0);
+        for (let i = 0; i < samples.length; i++) {
+          const fade = 1 - (i / samples.length);
+          samples[i] = (Math.random() * 2 - 1) * fade * fade * fade;
+        }
+
+        const noise = context.createBufferSource();
+        const filter = context.createBiquadFilter();
+        const noiseGain = context.createGain();
+        noise.buffer = buffer;
+        filter.type = "bandpass";
+        filter.frequency.setValueAtTime(1050 + Math.random() * 350, now);
+        filter.Q.setValueAtTime(0.9, now);
+        noiseGain.gain.setValueAtTime(0.9, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        noise.connect(filter).connect(noiseGain).connect(master);
+
+        const lowTone = context.createOscillator();
+        const lowGain = context.createGain();
+        lowTone.type = "triangle";
+        lowTone.frequency.setValueAtTime(240 + Math.random() * 35, now);
+        lowTone.frequency.exponentialRampToValueAtTime(125, now + duration);
+        lowGain.gain.setValueAtTime(0.3, now);
+        lowGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        lowTone.connect(lowGain).connect(master);
+
+        const highTone = context.createOscillator();
+        const highGain = context.createGain();
+        highTone.type = "sine";
+        highTone.frequency.setValueAtTime(560 + Math.random() * 50, now);
+        highTone.frequency.exponentialRampToValueAtTime(310, now + duration * .7);
+        highGain.gain.setValueAtTime(0.12, now);
+        highGain.gain.exponentialRampToValueAtTime(0.001, now + duration * .7);
+        highTone.connect(highGain).connect(master);
+
+        noise.start(now);
+        noise.stop(now + duration);
+        lowTone.start(now);
+        lowTone.stop(now + duration);
+        highTone.start(now);
+        highTone.stop(now + duration);
+      });
     }
 
     function createBeads() {
@@ -872,7 +884,7 @@
 
     function onPointerDown(e) {
       const bead = e.currentTarget;
-      unlockBeadSound();
+      playBeadClick(.8, true);
       bead.setPointerCapture(e.pointerId);
       bead.classList.add("is-dragging");
 
