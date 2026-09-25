@@ -19,6 +19,10 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
     html {
       width: 100%;
       height: 100%;
@@ -109,6 +113,14 @@
       display: none;
     }
 
+    .top-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     .lang-switch {
       position: static;
       right: auto;
@@ -120,7 +132,7 @@
       padding: 5px;
       border-radius: 13px;
       box-shadow: 0 2px 8px rgba(0,0,0,.10);
-      margin: 0 auto;
+      margin: 0;
     }
 
     .lang-select {
@@ -168,6 +180,41 @@
     .bead-sound-toggle[aria-pressed="false"] {
       color: #695b48;
       background: #eee9df;
+    }
+
+    .mode-switch {
+      display: flex;
+      gap: 4px;
+      padding: 5px;
+      border-radius: 13px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.10);
+    }
+
+    .mode-btn {
+      min-width: 76px;
+      height: 34px;
+      padding: 4px 10px;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      box-shadow: none;
+      color: #5f4b2f;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .mode-btn[aria-pressed="true"] {
+      border-color: #5f431c;
+      background: #ffda7d;
+      color: #32230f;
+    }
+
+    .instruction-line {
+      min-height: 19px;
+      color: #79551e;
+      font-size: clamp(13px, 1.8vw, 16px);
+      font-weight: 800;
     }
 
     .answer-btn {
@@ -219,18 +266,53 @@
       margin-top: 2px;
     }
 
+    .practice-feedback {
+      min-height: 22px;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .practice-feedback.is-correct {
+      color: #17642d;
+      background: rgba(111, 207, 123, .22);
+      animation: feedback-pop 350ms ease-out;
+    }
+
+    .practice-feedback.is-wrong {
+      color: #a22c23;
+      background: rgba(255, 116, 91, .18);
+      animation: feedback-shake 330ms ease-out;
+    }
+
+    .practice-feedback.is-hint {
+      color: #705017;
+      background: rgba(255, 202, 79, .3);
+    }
+
     .number-input-panel {
       width: min(100%, 700px);
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex-wrap: wrap;
       gap: 8px;
       margin: 0 auto 10px;
       padding: 8px;
       background: #fff;
       border-radius: 14px;
       box-shadow: 0 2px 8px rgba(0,0,0,.10);
+    }
+
+    .control-row {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     .input-label {
@@ -253,7 +335,8 @@
     }
 
     .show-number-btn,
-    .reset-btn {
+    .reset-btn,
+    .practice-btn {
       min-width: 70px;
       height: 36px;
       border-radius: 10px;
@@ -265,6 +348,26 @@
       cursor: pointer;
       padding: 5px 10px;
       box-shadow: none;
+    }
+
+    .difficulty-select {
+      height: 36px;
+      min-width: 104px;
+      padding: 4px 8px;
+      border: 2px solid #222;
+      border-radius: 10px;
+      background: #fff;
+      color: #111;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .practice-streak {
+      min-width: 56px;
+      color: #6e4c16;
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
     }
 
     .input-error {
@@ -336,6 +439,17 @@
       box-shadow: 0 0 0 4px rgba(255, 202, 79, .25);
     }
 
+    .rod-label.is-hint {
+      background: #80d8ff;
+      box-shadow: 0 0 0 5px rgba(73, 183, 232, .25);
+      animation: hint-pulse 750ms ease-in-out 2;
+    }
+
+    .rod-label.is-error {
+      background: #ff9b83;
+      box-shadow: 0 0 0 5px rgba(229, 72, 55, .2);
+    }
+
     .rod-label.hidden {
       display: none;
     }
@@ -372,6 +486,10 @@
       animation: bead-settle 190ms cubic-bezier(.2, .9, .35, 1.25);
     }
 
+    .bead.is-error-shake {
+      animation: bead-error-shake 360ms ease-in-out;
+    }
+
     .abacus-wrap.is-animating .bead {
       pointer-events: none;
     }
@@ -395,11 +513,70 @@
       transform: translateX(-50%) scaleX(1);
     }
 
+    .rod-focus.is-hint {
+      opacity: 1;
+      background: linear-gradient(180deg, rgba(66, 190, 244, 0), rgba(66, 190, 244, .38), rgba(66, 190, 244, 0));
+      animation: hint-pulse 750ms ease-in-out 2;
+    }
+
+    .rod-focus.is-error {
+      opacity: 1;
+      background: linear-gradient(180deg, rgba(239, 88, 65, 0), rgba(239, 88, 65, .28), rgba(239, 88, 65, 0));
+    }
+
+    .celebration-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .celebration-star {
+      position: absolute;
+      left: 50%;
+      top: 48%;
+      color: #ff9f1c;
+      font-size: clamp(18px, 4vw, 34px);
+      text-shadow: 0 2px 0 #fff6cf;
+      animation: star-burst 820ms ease-out forwards;
+    }
+
     @keyframes bead-settle {
       0% { transform: translate(-50%, -50%) scale(1); }
       48% { transform: translate(-50%, -50%) scale(1.09, .94); }
       76% { transform: translate(-50%, -50%) scale(.98, 1.03); }
       100% { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @keyframes bead-error-shake {
+      0%, 100% { transform: translate(-50%, -50%); }
+      25% { transform: translate(calc(-50% - 5px), -50%); }
+      50% { transform: translate(calc(-50% + 5px), -50%); }
+      75% { transform: translate(calc(-50% - 3px), -50%); }
+    }
+
+    @keyframes hint-pulse {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.18); }
+    }
+
+    @keyframes feedback-pop {
+      0% { transform: scale(.88); opacity: 0; }
+      70% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes feedback-shake {
+      0%, 100% { transform: translateX(0); }
+      30% { transform: translateX(-6px); }
+      60% { transform: translateX(6px); }
+    }
+
+    @keyframes star-burst {
+      0% { transform: translate(-50%, -50%) scale(.4); opacity: 0; }
+      18% { opacity: 1; }
+      100% { transform: translate(calc(-50% + var(--star-x)), calc(-50% + var(--star-y))) rotate(var(--star-r)) scale(1.05); opacity: 0; }
     }
 
     .forest-footer {
@@ -525,6 +702,21 @@
         padding: 4px;
       }
 
+      .top-toolbar {
+        gap: 5px;
+      }
+
+      .mode-switch {
+        padding: 4px;
+      }
+
+      .mode-btn {
+        min-width: 68px;
+        height: 31px;
+        padding: 4px 7px;
+        font-size: 12px;
+      }
+
       .lang-select {
         min-width: 140px;
         height: 31px;
@@ -571,7 +763,9 @@
       }
 
       .show-number-btn,
-      .reset-btn {
+      .reset-btn,
+      .practice-btn,
+      .difficulty-select {
         height: 34px;
         font-size: 13px;
       }
@@ -629,22 +823,39 @@
       .bead.is-settling {
         animation: none;
       }
+
+      .bead.is-error-shake,
+      .rod-label.is-hint,
+      .rod-focus.is-hint,
+      .practice-feedback,
+      .celebration-star {
+        animation: none;
+      }
     }
   </style>
 </head>
 <body>
   <main class="tool">
     <section class="top-panel">
-      <div class="lang-switch" aria-label="Language switch">
-        <select class="lang-select" id="languageSelect" aria-label="Language">
-          <option value="en">English</option>
-          <option value="zh">中文</option>
-          <option value="bm">Bahasa Melayu</option>
-        </select>
-        <button class="bead-sound-toggle" id="beadSoundToggle" type="button" aria-pressed="true">
-          🔊 Beads: On
-        </button>
+      <div class="top-toolbar">
+        <div class="lang-switch" aria-label="Language switch">
+          <select class="lang-select" id="languageSelect" aria-label="Language">
+            <option value="en">English</option>
+            <option value="zh">中文</option>
+            <option value="bm">Bahasa Melayu</option>
+          </select>
+          <button class="bead-sound-toggle" id="beadSoundToggle" type="button" aria-pressed="true">
+            🔊 Beads: On
+          </button>
+        </div>
+
+        <div class="mode-switch" id="modeSwitch" role="group" aria-label="Learning mode">
+          <button class="mode-btn" id="freeModeBtn" type="button" aria-pressed="true">Free</button>
+          <button class="mode-btn" id="practiceModeBtn" type="button" aria-pressed="false">Practice</button>
+        </div>
       </div>
+
+      <div class="instruction-line" id="instructionLine">Move the beads to explore numbers.</div>
 
       <div class="display">
         <div class="number-line hidden" id="numberDisplay">0</div>
@@ -655,13 +866,32 @@
         <button class="answer-btn" id="answerBtn" type="button" aria-label="Show answer">Answer</button>
         <button class="speak-btn" id="speakBtn" type="button" aria-label="Speak">🔊</button>
       </div>
+
+      <div class="practice-feedback hidden" id="practiceFeedback" role="status" aria-live="polite"></div>
     </section>
 
     <section class="number-input-panel" aria-label="Number input">
-      <span class="input-label" id="keyNumberLabel">Number</span>
-      <input class="number-input" id="keyNumberInput" type="number" inputmode="numeric" min="0" max="9999" placeholder="0" />
-      <button class="show-number-btn" id="showNumberBtn" type="button">Show</button>
-      <button class="reset-btn" id="resetBtn" type="button">Reset</button>
+      <div class="control-row" id="freeControls">
+        <span class="input-label" id="keyNumberLabel">Number</span>
+        <input class="number-input" id="keyNumberInput" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0" />
+        <button class="show-number-btn" id="showNumberBtn" type="button">Show</button>
+        <button class="reset-btn" id="resetBtn" type="button">Reset</button>
+      </div>
+
+      <div class="control-row hidden" id="practiceControls">
+        <label class="input-label" id="difficultyLabel" for="difficultySelect">Level</label>
+        <select class="difficulty-select" id="difficultySelect">
+          <option value="1">1 digit</option>
+          <option value="2">2 digits</option>
+          <option value="3">3 digits</option>
+          <option value="4">4 digits</option>
+        </select>
+        <button class="practice-btn" id="newQuestionBtn" type="button">New</button>
+        <button class="practice-btn" id="checkAnswerBtn" type="button">Check</button>
+        <button class="practice-btn" id="hintBtn" type="button">Hint</button>
+        <span class="practice-streak" id="practiceStreak" aria-label="Streak">⭐ 0</span>
+      </div>
+
       <div class="input-error hidden" id="inputError" role="alert"></div>
     </section>
 
@@ -693,9 +923,21 @@
     const answerBtn = document.getElementById("answerBtn");
     const languageSelect = document.getElementById("languageSelect");
     const beadSoundToggle = document.getElementById("beadSoundToggle");
+    const freeModeBtn = document.getElementById("freeModeBtn");
+    const practiceModeBtn = document.getElementById("practiceModeBtn");
+    const instructionLine = document.getElementById("instructionLine");
+    const practiceFeedback = document.getElementById("practiceFeedback");
     const keyNumberLabel = document.getElementById("keyNumberLabel");
     const keyNumberInput = document.getElementById("keyNumberInput");
     const showNumberBtn = document.getElementById("showNumberBtn");
+    const freeControls = document.getElementById("freeControls");
+    const practiceControls = document.getElementById("practiceControls");
+    const difficultyLabel = document.getElementById("difficultyLabel");
+    const difficultySelect = document.getElementById("difficultySelect");
+    const newQuestionBtn = document.getElementById("newQuestionBtn");
+    const checkAnswerBtn = document.getElementById("checkAnswerBtn");
+    const hintBtn = document.getElementById("hintBtn");
+    const practiceStreak = document.getElementById("practiceStreak");
     const inputError = document.getElementById("inputError");
     const rodLabels = document.querySelectorAll(".rod-label");
     const rodFocuses = document.querySelectorAll(".rod-focus");
@@ -737,6 +979,19 @@
         show: "Show",
         soundOn: "Beads: On",
         soundOff: "Beads: Off",
+        freeMode: "Free",
+        practiceMode: "Practice",
+        instructionFree: "Move the beads to explore numbers.",
+        instructionPractice: "Build this number on the abacus.",
+        difficulty: "Level",
+        digits: ["1 digit", "2 digits", "3 digits", "4 digits"],
+        newQuestion: "New",
+        check: "Check",
+        hint: "Hint",
+        correct: "Correct! Great work!",
+        wrong: "Not yet — check the highlighted place values.",
+        streak: "Streak",
+        hintText: (label, digit) => `Hint: set the ${label} rod to ${digit}.`,
         error: "Please enter a number from 0 to 9999."
       },
       zh: {
@@ -746,6 +1001,19 @@
         show: "显示",
         soundOn: "珠声：开",
         soundOff: "珠声：关",
+        freeMode: "自由",
+        practiceMode: "练习",
+        instructionFree: "拨动算盘珠，自由探索数字。",
+        instructionPractice: "请在算盘上表示这个数字。",
+        difficulty: "难度",
+        digits: ["1 位数", "2 位数", "3 位数", "4 位数"],
+        newQuestion: "新题",
+        check: "检查",
+        hint: "提示",
+        correct: "答对了！做得很好！",
+        wrong: "还没正确，请检查高亮的位值。",
+        streak: "连续答对",
+        hintText: (label, digit) => `提示：${label}位应该是 ${digit}。`,
         error: "请输入 0 到 9999 的数字。"
       },
       bm: {
@@ -755,15 +1023,34 @@
         show: "Papar",
         soundOn: "Bunyi: Hidup",
         soundOff: "Bunyi: Mati",
+        freeMode: "Bebas",
+        practiceMode: "Latihan",
+        instructionFree: "Gerakkan manik untuk meneroka nombor.",
+        instructionPractice: "Bina nombor ini pada abakus.",
+        difficulty: "Tahap",
+        digits: ["1 digit", "2 digit", "3 digit", "4 digit"],
+        newQuestion: "Baharu",
+        check: "Semak",
+        hint: "Petunjuk",
+        correct: "Betul! Syabas!",
+        wrong: "Belum tepat — semak nilai tempat yang diserlahkan.",
+        streak: "Berturut-turut",
+        hintText: (label, digit) => `Petunjuk: lajur ${label} perlu menunjukkan ${digit}.`,
         error: "Sila masukkan nombor dari 0 hingga 9999."
       }
     };
 
     let currentLang = "en";
+    let currentMode = "free";
     let answerVisible = false;
+    let practiceDifficulty = 1;
+    let practiceTarget = null;
+    let practiceStreakCount = 0;
+    let practiceQuestionSolved = false;
     let beadSequenceToken = 0;
     let controlsLocked = false;
     let activeColumnToken = 0;
+    let practiceVisualToken = 0;
 
     /*
       Label position fine tuning only.
@@ -818,6 +1105,7 @@
       keyNumberLabel.textContent = buttonText.number;
       showNumberBtn.textContent = buttonText.show;
       updateBeadSoundToggle();
+      updateLearningInterfaceText();
       updateInputErrorMessage();
 
       rodLabels.forEach((label, index) => {
@@ -825,8 +1113,58 @@
         label.classList.toggle("hidden", !data.showLabels);
       });
 
-      hideAnswer();
+      clearPracticeFeedback();
+      clearPracticeVisuals();
+      if (currentMode === "free") hideAnswer();
       updateNumber();
+    }
+
+    function updateLearningInterfaceText() {
+      const text = buttonTextData[currentLang];
+      freeModeBtn.textContent = text.freeMode;
+      practiceModeBtn.textContent = text.practiceMode;
+      instructionLine.textContent = currentMode === "practice" ? text.instructionPractice : text.instructionFree;
+      difficultyLabel.textContent = text.difficulty;
+      newQuestionBtn.textContent = text.newQuestion;
+      checkAnswerBtn.textContent = text.check;
+      hintBtn.textContent = text.hint;
+      practiceStreak.setAttribute("aria-label", `${text.streak}: ${practiceStreakCount}`);
+      [...difficultySelect.options].forEach((option, index) => {
+        option.textContent = text.digits[index];
+      });
+    }
+
+    freeModeBtn.addEventListener("click", () => setMode("free"));
+    practiceModeBtn.addEventListener("click", () => setMode("practice"));
+    difficultySelect.addEventListener("change", () => {
+      practiceDifficulty = Number(difficultySelect.value);
+      startNewPracticeProblem();
+    });
+    newQuestionBtn.addEventListener("click", startNewPracticeProblem);
+    checkAnswerBtn.addEventListener("click", checkPracticeAnswer);
+    hintBtn.addEventListener("click", showPracticeHint);
+
+    function setMode(mode) {
+      if (controlsLocked || (mode !== "free" && mode !== "practice")) return;
+      currentMode = mode;
+      answerVisible = false;
+      clearInputError();
+      clearPracticeFeedback();
+      clearPracticeVisuals();
+
+      const isPractice = mode === "practice";
+      freeModeBtn.setAttribute("aria-pressed", String(!isPractice));
+      practiceModeBtn.setAttribute("aria-pressed", String(isPractice));
+      freeControls.classList.toggle("hidden", isPractice);
+      practiceControls.classList.toggle("hidden", !isPractice);
+      answerBtn.parentElement.classList.toggle("hidden", isPractice);
+      updateLearningInterfaceText();
+
+      if (isPractice) startNewPracticeProblem();
+      else {
+        hideAnswer();
+        updateNumber();
+      }
     }
 
     let currentInputError = false;
@@ -849,8 +1187,8 @@
 
     function getKeyInputNumber() {
       const value = Number(keyNumberInput.value);
-      if (!Number.isFinite(value)) return null;
-      const number = Math.floor(value);
+      if (!Number.isFinite(value) || !Number.isInteger(value)) return null;
+      const number = value;
       if (number < 0 || number > 9999) return null;
       return number;
     }
@@ -927,7 +1265,140 @@
       answerBtn.disabled = locked;
       languageSelect.disabled = locked;
       keyNumberInput.disabled = locked;
+      freeModeBtn.disabled = locked;
+      practiceModeBtn.disabled = locked;
+      difficultySelect.disabled = locked;
+      newQuestionBtn.disabled = locked;
+      checkAnswerBtn.disabled = locked;
+      hintBtn.disabled = locked;
       abacus.classList.toggle("is-animating", locked);
+    }
+
+    async function startNewPracticeProblem() {
+      if (currentMode !== "practice" || controlsLocked) return;
+      const previousTarget = practiceTarget;
+      const min = practiceDifficulty === 1 ? 0 : 10 ** (practiceDifficulty - 1);
+      const max = (10 ** practiceDifficulty) - 1;
+
+      do {
+        practiceTarget = Math.floor(Math.random() * (max - min + 1)) + min;
+      } while (practiceTarget === previousTarget && max > min);
+
+      practiceQuestionSolved = false;
+      clearPracticeFeedback();
+      clearPracticeVisuals();
+      updateNumber();
+      await resetAbacus();
+      updateNumber();
+    }
+
+    function checkPracticeAnswer() {
+      if (currentMode !== "practice" || controlsLocked || practiceTarget === null) return;
+      clearPracticeVisuals();
+
+      const currentDigits = columns.map((_, index) => getColumnDigit(index));
+      const targetDigits = getDigits(practiceTarget);
+      const wrongColumns = targetDigits
+        .map((digit, index) => digit === currentDigits[index] ? -1 : index)
+        .filter(index => index >= 0);
+
+      if (wrongColumns.length === 0) {
+        const newlySolved = !practiceQuestionSolved;
+        if (newlySolved) practiceStreakCount += 1;
+        practiceQuestionSolved = true;
+        practiceStreak.textContent = `⭐ ${practiceStreakCount}`;
+        practiceStreak.setAttribute("aria-label", `${buttonTextData[currentLang].streak}: ${practiceStreakCount}`);
+        showPracticeFeedback(buttonTextData[currentLang].correct, "correct");
+        if (newlySolved) celebratePracticeSuccess();
+        return;
+      }
+
+      practiceStreakCount = 0;
+      practiceStreak.textContent = "⭐ 0";
+      practiceStreak.setAttribute("aria-label", `${buttonTextData[currentLang].streak}: 0`);
+      showPracticeFeedback(buttonTextData[currentLang].wrong, "wrong");
+      markPracticeColumns(wrongColumns, "error");
+    }
+
+    function showPracticeHint() {
+      if (currentMode !== "practice" || controlsLocked || practiceTarget === null) return;
+      clearPracticeVisuals();
+
+      const targetDigits = getDigits(practiceTarget);
+      const wrongColumn = targetDigits.findIndex((digit, index) => digit !== getColumnDigit(index));
+      if (wrongColumn === -1) {
+        checkPracticeAnswer();
+        return;
+      }
+
+      const label = languageData[currentLang].labels[wrongColumn];
+      showPracticeFeedback(buttonTextData[currentLang].hintText(label, targetDigits[wrongColumn]), "hint");
+      markPracticeColumns([wrongColumn], "hint", 1500);
+    }
+
+    function showPracticeFeedback(message, kind) {
+      practiceFeedback.textContent = message;
+      practiceFeedback.className = `practice-feedback is-${kind}`;
+    }
+
+    function clearPracticeFeedback() {
+      practiceFeedback.textContent = "";
+      practiceFeedback.className = "practice-feedback hidden";
+    }
+
+    function markPracticeColumns(indices, kind, duration = 0) {
+      const token = ++practiceVisualToken;
+      indices.forEach(index => {
+        rodLabels[index].classList.add(`is-${kind}`);
+        rodFocuses[index].classList.add(`is-${kind}`);
+        if (kind === "error") {
+          beads.filter(bead => Number(bead.dataset.col) === index).forEach(bead => {
+            bead.classList.remove("is-error-shake");
+            void bead.offsetWidth;
+            bead.classList.add("is-error-shake");
+            bead.addEventListener("animationend", () => bead.classList.remove("is-error-shake"), { once: true });
+          });
+        }
+      });
+
+      if (duration > 0) {
+        setTimeout(() => {
+          if (token === practiceVisualToken) clearPracticeVisuals();
+        }, duration);
+      }
+    }
+
+    function clearPracticeVisuals() {
+      practiceVisualToken += 1;
+      rodLabels.forEach(label => label.classList.remove("is-hint", "is-error"));
+      rodFocuses.forEach(focus => focus.classList.remove("is-hint", "is-error"));
+      beads.forEach(bead => bead.classList.remove("is-error-shake"));
+      abacus.querySelectorAll(".celebration-layer").forEach(layer => layer.remove());
+    }
+
+    function celebratePracticeSuccess() {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const layer = document.createElement("div");
+      layer.className = "celebration-layer";
+      const directions = [
+        [-145, -95, -24], [-95, -145, 18], [-38, -125, -15], [36, -150, 24],
+        [95, -118, -20], [145, -72, 28], [-155, 18, 16], [155, 24, -18],
+        [-112, 105, -22], [-42, 128, 14], [48, 120, -16], [118, 92, 24]
+      ];
+
+      directions.forEach(([x, y, rotation], index) => {
+        const star = document.createElement("span");
+        star.className = "celebration-star";
+        star.textContent = index % 3 === 0 ? "✦" : "★";
+        star.style.setProperty("--star-x", `${x}px`);
+        star.style.setProperty("--star-y", `${y}px`);
+        star.style.setProperty("--star-r", `${rotation}deg`);
+        star.style.animationDelay = `${index * 22}ms`;
+        layer.appendChild(star);
+      });
+
+      abacus.appendChild(layer);
+      setTimeout(() => layer.remove(), 1150);
     }
 
     showNumberBtn.addEventListener("click", showNumberOnAbacus);
@@ -1212,6 +1683,10 @@
         playBeadClick();
         settleColumn(colIndex);
         highlightColumn(colIndex);
+        if (currentMode === "practice") {
+          clearPracticeFeedback();
+          clearPracticeVisuals();
+        }
       }
 
       syncBeadPositions();
@@ -1249,24 +1724,37 @@
     }
 
     function updateNumber() {
+      if (currentMode === "practice" && practiceTarget !== null) {
+        numberDisplay.textContent = practiceTarget.toString();
+        wordDisplay.textContent = languageData[currentLang].words(practiceTarget);
+        numberDisplay.classList.remove("hidden");
+        wordDisplay.classList.remove("hidden");
+        answerBtn.parentElement.classList.add("hidden");
+        speakBtn.disabled = true;
+        return;
+      }
+
       const total = getTotal();
       numberDisplay.textContent = total.toString();
       wordDisplay.textContent = languageData[currentLang].words(total);
-
       numberDisplay.classList.toggle("hidden", !answerVisible);
       wordDisplay.classList.toggle("hidden", !answerVisible);
+      answerBtn.parentElement.classList.remove("hidden");
       speakBtn.disabled = !answerVisible;
     }
 
     function showAnswer() {
+      if (currentMode !== "free" || controlsLocked) return;
       answerVisible = true;
       updateNumber();
     }
 
     function hideAnswer() {
       answerVisible = false;
-      numberDisplay.classList.add("hidden");
-      wordDisplay.classList.add("hidden");
+      if (currentMode === "free") {
+        numberDisplay.classList.add("hidden");
+        wordDisplay.classList.add("hidden");
+      }
       speakBtn.disabled = true;
     }
 
